@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>简历修改工作台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span>履</span><div><b>简历修改工作台</b><small>LOCAL RESUME STUDIO</small></div></div>
+    <label class="select-label">模板<select id="templateSelect"></select></label>
+    <button id="newTemplateBtn" class="ghost">＋ 新建模板</button>
+    <label class="file-btn ghost">导入 HTML<input id="htmlUpload" type="file" accept=".html,.htm"></label>
+    <button id="saveVersionBtn" class="primary">保存版本</button>
+    <div class="export-menu">
+      <button id="exportBtn" class="dark">导出 ▾</button>
+      <div id="exportPopover" class="popover">
+        <button data-export="docx">导出 Word (.docx)</button>
+        <button data-export="pdf">打印 / 保存 PDF</button>
+      </div>
+    </div>
+    <input id="versionSearch" class="top-search" placeholder="搜索公司 / 岗位 / 日期">
+    <span id="saveStatus" class="save-status">本地自动保存</span>
+  </header>
+
+  <div class="workspace">
+    <aside class="leftbar">
+      <section>
+        <div class="side-head"><h2>模板库</h2><span id="templateCount">1</span></div>
+        <div id="templateList" class="template-list"></div>
+      </section>
+      <section class="history-section">
+        <div class="side-head"><h2>历史版本</h2><span id="versionCount">0</span></div>
+        <div id="versionList" class="version-list"></div>
+      </section>
+      <section class="backup-card">
+        <b>数据安全</b>
+        <p>数据仅保存在此浏览器，请定期下载备份。</p>
+        <button id="backupExport">导出备份 JSON</button>
+        <label>导入恢复<input id="backupImport" type="file" accept=".json"></label>
+      </section>
+    </aside>
+
+    <main class="editor-shell">
+      <div class="editor-toolbar">
+        <div><i></i><span>仅可修改文字</span><small>没有任何排版工具，样式和 DOM 结构不会改变</small></div>
+        <div><button id="undoTextBtn">恢复当前模板</button><button id="fullscreenBtn">专注模式</button></div>
+      </div>
+      <div class="paper-stage">
+        <article id="resumeEditor" class="resume-paper" contenteditable="true" spellcheck="false"></article>
+      </div>
+    </main>
+
+    <aside class="rightbar">
+      <nav class="right-tabs">
+        <button class="active" data-tab="jd">JD 分析</button>
+        <button data-tab="profile">个人信息库</button>
+      </nav>
+
+      <section id="jdPanel" class="right-panel active">
+        <div class="field-grid">
+          <label>目标公司<input id="targetCompany" placeholder="例如：百度"></label>
+          <label>目标岗位<input id="targetRole" placeholder="例如：内容策划"></label>
+        </div>
+        <label>岗位描述 JD<textarea id="jdInput" placeholder="粘贴完整岗位描述，系统会在本地分析关键词……"></textarea></label>
+        <button id="analyzeBtn" class="primary wide">生成岗位能力地图</button>
+        <div id="abilityMap" class="ability-map"></div>
+        <div class="keyword-block">
+          <header><b>已匹配关键词</b><span id="matchedCount">0</span></header>
+          <div id="matchedKeywords" class="keyword-cloud matched"></div>
+        </div>
+        <div class="keyword-block">
+          <header><b>缺失关键词</b><span id="missingCount">0</span></header>
+          <div id="missingKeywords" class="keyword-cloud missing"></div>
+          <p class="microcopy">点击缺失关键词，查看建议补充位置。只提示已有事实，不会虚构经历。</p>
+        </div>
+      </section>
+
+      <section id="profilePanel" class="right-panel">
+        <div class="library-summary">
+          <div><span>素材条目</span><b id="materialCount">156</b></div>
+          <div><span>含量化结果</span><b id="evidenceCount">0</b></div>
+          <div><span>当前匹配</span><b id="profileMatchCount">0</b></div>
+        </div>
+        <div class="import-strip">
+          <div><b>Excel 覆盖导入</b><small>识别“经历素材库”或首个工作表，导入前自动保存备份。</small></div>
+          <label class="primary">上传 Excel<input id="excelUpload" type="file" accept=".xlsx"></label>
+        </div>
+        <details class="profile-editor">
+          <summary>编辑结构化个人信息</summary>
+          <div id="profileEditor"></div>
+        </details>
+        <div class="library-tools">
+          <input id="materialSearch" placeholder="搜索组织、能力、关键词">
+          <select id="materialFilter"><option value="all">全部素材</option><option value="matched">匹配当前 JD</option><option value="evidence">含量化证据</option></select>
+        </div>
+        <div id="materialList" class="material-list"></div>
+      </section>
+    </aside>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <dialog id="versionDialog">
+    <form method="dialog" class="dialog-card">
+      <header><h2>保存岗位版本</h2><button value="cancel">×</button></header>
+      <label>备注<textarea id="versionNote" placeholder="例如：突出品牌内容与 AI 写作能力"></textarea></label>
+      <footer><button value="cancel" class="ghost">取消</button><button id="confirmSaveVersion" value="default" class="primary">确认保存</button></footer>
+    </form>
+  </dialog>
+  <dialog id="diffDialog">
+    <div class="dialog-card diff-dialog">
+      <header><h2>版本查看与对比</h2><button id="closeDiff">×</button></header>
+      <div id="diffContent"></div>
+    </div>
+  </dialog>
+
+  <script src="vendor/jszip.min.js"></script>
+  <script src="vendor/docx.iife.js"></script>
+  <script src="data/materials-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
